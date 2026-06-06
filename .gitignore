@@ -222,7 +222,8 @@ mlruns/
 mlflow.db
 artifacts/
 data/
-models/
+# Removing models for workflow test
+# models/
 
 .DS_Store
 data_modification.py
