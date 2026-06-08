@@ -8,7 +8,6 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY app/ ./app/
 COPY models/ ./models/
-COPY serve.sh .
-RUN chmod +x serve.sh
+COPY start.py .
 EXPOSE 8080
-ENTRYPOINT ["./serve.sh"]
+ENTRYPOINT ["python", "start.py"]
