@@ -1,7 +1,9 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import Response
 from app.schemas import EmployeeInput, PredictionOutput
 from app.model_loader import load_from_pkl
 import pandas as pd
+
 
 app = FastAPI(
     title="AttritionGuard API",
@@ -14,10 +16,10 @@ app = FastAPI(
 local_model  = load_from_pkl("models/model.pkl")
 
 
-# ── Health check ───────────────────────────────────────────────────
-@app.get("/health")
-def health():
-    return {"status": "healthy"}
+# # ── Health check ───────────────────────────────────────────────────
+# @app.get("/health")
+# def health():
+#     return {"status": "healthy"}
 
 
 # ── Predict using MLflow model ─────────────────────────────────────
@@ -36,17 +38,41 @@ def health():
 #         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ── Predict using local pkl model ─────────────────────────────────
-@app.post("/predict/local", response_model=PredictionOutput)
-def predict_local(employee: EmployeeInput):
-    """Predict using model loaded from local pickle file."""
+# # ── Predict using local pkl model ─────────────────────────────────
+# @app.post("/predict/local", response_model=PredictionOutput)
+# def predict_local(employee: EmployeeInput):
+#     """Predict using model loaded from local pickle file."""
+#     try:
+#         input_df     = pd.DataFrame([employee.model_dump()])
+#         probability  = float(local_model.predict_proba(input_df)[0][1])
+#         return PredictionOutput(
+#             attrition_risk = "High" if probability >= 0.5 else "Low",
+#             probability    = round(probability, 4),
+#             model_source   = "Local file — models/model.pkl"
+#         )
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── SageMaker required endpoints ──────────────────────────────────
+
+@app.get("/ping")
+def ping():
+    """SageMaker health check — must return 200."""
+    return Response(status_code=200)
+
+
+@app.post("/invocations")
+def invocations(employee: EmployeeInput):
+    """SageMaker inference endpoint."""
     try:
-        input_df     = pd.DataFrame([employee.model_dump()])
-        probability  = float(local_model.predict_proba(input_df)[0][1])
-        return PredictionOutput(
-            attrition_risk = "High" if probability >= 0.5 else "Low",
-            probability    = round(probability, 4),
-            model_source   = "Local file — models/model.pkl"
-        )
+        input_df       = pd.DataFrame([employee.model_dump()])
+        probability    = float(local_model.predict_proba(input_df)[0][1])
+        attrition_risk = "High" if probability >= 0.5 else "Low"
+        return {
+            "attrition_risk": attrition_risk,
+            "probability"   : round(probability, 4),
+            "model_source"  : "SageMaker endpoint"
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
