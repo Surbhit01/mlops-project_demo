@@ -22,6 +22,8 @@ COPY models/ ./models/
 # COPY serve /opt/serve
 # RUN chmod +x /opt/serve
 COPY serve /usr/local/bin/serve
-RUN dos2unix /usr/local/bin/serve && chmod +x /usr/local/bin/serve
+RUN sed -i '1s/^\xef\xbb\xbf//' /usr/local/bin/serve && \
+    sed -i 's/\r$//' /usr/local/bin/serve && \
+    chmod +x /usr/local/bin/serve
 EXPOSE 8080
-ENTRYPOINT ["serve"]
+CMD ["serve"]
