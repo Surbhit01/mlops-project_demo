@@ -1,36 +1,31 @@
-# Changes for Sagemaker compatibility
-# 1. Using ENTRYPOINT instead of CMD to ensure the application starts correctly in SageMaker.
-# 2. Exposing port 8080, which is the default port for SageMaker inference containers
+# 1. Force the base image to be AMD64 directly at the root layer
+FROM --platform=linux/amd64 python:3.11-slim
 
-# FROM python:3.11-slim
-# WORKDIR /app
-# COPY requirements.txt .
-# RUN pip install --no-cache-dir -r requirements.txt
-# COPY app/ ./app/
-# COPY models/ ./models/
-# COPY start.py .
-# EXPOSE 8080
-# ENTRYPOINT ["python", "start.py"]
+# 2. Use the strict default directory SageMaker expects for custom containers
+WORKDIR /opt/program
 
-FROM python:3.11-slim
-WORKDIR /opt
+# Install system dependencies
+RUN apt-get update && apt-get install -y dos2unix && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies
+# Install Python packages
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy internal application logic
+# Copy your application directories
 COPY app/ ./app/
 COPY models/ ./models/
 
-# Generate the script dynamically with explicit paths and execution permissions
-RUN echo '#!/bin/sh' > /usr/local/bin/serve && \
-    echo 'cd /opt' >> /usr/local/bin/serve && \
-    echo 'exec uvicorn app.main:app --proxy-headers --host 0.0.0.0 --port 8080' >> /usr/local/bin/serve && \
-    chmod +x /usr/local/bin/serve
+# 3. Create a clean python execution file directly inside the image
+# This bypasses the shell entirely and maps Uvicorn straight to python's interpreter
+RUN echo '#!/usr/bin/env python3' > /opt/program/serve && \
+    echo 'import os' >> /opt/program/serve && \
+    echo 'os.system("uvicorn app.main:app --proxy-headers --host 0.0.0.0 --port 8080")' >> /opt/program/serve && \
+    chmod 755 /opt/program/serve
+
+# Ensure the SageMaker program directory is actively in the path
+ENV PATH="/opt/program:${PATH}"
 
 EXPOSE 8080
 
-# This matches SageMaker's default expectation exactly
+# Explicitly match SageMaker's direct call expectation
 CMD ["serve"]
-
