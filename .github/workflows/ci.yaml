@@ -52,7 +52,7 @@ jobs:
         run: |
           docker buildx build \
               --platform linux/amd64 \
-              --tag 716643470956.dkr.ecr.us-east-1.amazonaws.com/attritionguard:v2-amd64 \
+              --tag 716643470956.dkr.ecr.us-east-1.amazonaws.com/attritionguard:v3 \
               --provenance=false \
               --sbom=false \
               --push \

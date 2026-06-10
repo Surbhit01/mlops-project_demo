@@ -15,18 +15,22 @@
 FROM python:3.11-slim
 WORKDIR /opt
 
-# Copy and install dependencies
+# Install Python dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy internal application logic code blocks
+# Copy internal application logic
 COPY app/ ./app/
 COPY models/ ./models/
 
-# Expose internal SageMaker hosting port
+# Generate the script dynamically with explicit paths and execution permissions
+RUN echo '#!/bin/bash' > /usr/local/bin/serve && \
+    echo 'cd /opt' >> /usr/local/bin/serve && \
+    echo 'exec uvicorn app.main:app --proxy-headers --host 0.0.0.0 --port 8080' >> /usr/local/bin/serve && \
+    chmod +x /usr/local/bin/serve
+
 EXPOSE 8080
 
-RUN ln -s /usr/local/bin/uvicorn /usr/bin/serve
+# This matches SageMaker's default expectation exactly
+CMD ["serve"]
 
-# Launch Uvicorn natively without relying on a wrapper shell file
-CMD ["uvicorn", "app.main:app", "--proxy-headers", "--host", "0.0.0.0", "--port", "8080"]
