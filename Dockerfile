@@ -26,5 +26,7 @@ COPY models/ ./models/
 # Expose internal SageMaker hosting port
 EXPOSE 8080
 
+RUN ln -s /usr/local/bin/uvicorn /usr/bin/serve
+
 # Launch Uvicorn natively without relying on a wrapper shell file
 CMD ["uvicorn", "app.main:app", "--proxy-headers", "--host", "0.0.0.0", "--port", "8080"]
