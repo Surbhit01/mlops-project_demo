@@ -24,7 +24,7 @@ COPY app/ ./app/
 COPY models/ ./models/
 
 # Generate the script dynamically with explicit paths and execution permissions
-RUN echo '#!/bin/bash' > /usr/local/bin/serve && \
+RUN echo '#!/bin/sh' > /usr/local/bin/serve && \
     echo 'cd /opt' >> /usr/local/bin/serve && \
     echo 'exec uvicorn app.main:app --proxy-headers --host 0.0.0.0 --port 8080' >> /usr/local/bin/serve && \
     chmod +x /usr/local/bin/serve
