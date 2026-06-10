@@ -15,10 +15,13 @@
 FROM python:3.11-slim
 WORKDIR /opt
 COPY requirements.txt .
+RUN apt-get update && apt-get install -y dos2unix
 RUN pip install --no-cache-dir -r requirements.txt
 COPY app/ ./app/
 COPY models/ ./models/
-COPY serve /opt/serve
-RUN chmod +x /opt/serve
-ENV PATH="/opt/:${PATH}"
+# COPY serve /opt/serve
+# RUN chmod +x /opt/serve
+COPY serve /usr/local/bin/serve
+RUN dos2unix /usr/local/bin/serve && chmod +x /usr/local/bin/serve
 EXPOSE 8080
+ENTRYPOINT ["serve"]
