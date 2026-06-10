@@ -14,16 +14,17 @@
 
 FROM python:3.11-slim
 WORKDIR /opt
+
+# Copy and install dependencies
 COPY requirements.txt .
-RUN apt-get update && apt-get install -y dos2unix
 RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy internal application logic code blocks
 COPY app/ ./app/
 COPY models/ ./models/
-# COPY serve /opt/serve
-# RUN chmod +x /opt/serve
-COPY serve /usr/local/bin/serve
-RUN sed -i '1s/^\xef\xbb\xbf//' /usr/local/bin/serve && \
-    sed -i 's/\r$//' /usr/local/bin/serve && \
-    chmod +x /usr/local/bin/serve
+
+# Expose internal SageMaker hosting port
 EXPOSE 8080
-CMD ["serve"]
+
+# Launch Uvicorn natively without relying on a wrapper shell file
+CMD ["uvicorn", "app.main:app", "--proxy-headers", "--host", "0.0.0.0", "--port", "8080"]
